@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AniShelf</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+
+        <div id="titlebar">
+            <div class="titlebar-left">
+                <span class="titlebar-icon">本</span>
+                <span class="titlebar-title">AniShelf</span>
+            </div>
+            <div class="titlebar-center" data-tauri-drag-region></div>
+            <div class="titlebar-right">
+                <button class="titlebar-btn" id="titlebar-minimize" aria-label="Minimize">
+                    <svg width="12" height="12" viewBox="0 0 12 12">
+                        <rect x="1" y="5.5" width="10" height="1" rx="0.5" fill="currentColor"/>
+                    </svg>
+                </button>
+                <button class="titlebar-btn" id="titlebar-maximize" aria-label="Maximize">
+                    <svg width="12" height="12" viewBox="0 0 12 12">
+                        <rect x="1.5" y="1.5" width="9" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"/>
+                    </svg>
+                </button>
+                <button class="titlebar-btn titlebar-close" id="titlebar-close" aria-label="Close">
+                    <svg width="12" height="12" viewBox="0 0 12 12">
+                        <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div id="layout">
+            <aside id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-mark">A</span>
+                    <span class="logo-text">niShelf</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <span class="nav-section-title">Library</span>
+                    <div class="nav-item active">
+                        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="3" width="6" height="14" rx="1"/>
+                            <rect x="10" y="3" width="8" height="9" rx="1"/>
+                            <rect x="10" y="14" width="8" height="3" rx="1"/>
+                        </svg>
+                        <span>All Anime</span>
+                        <span id="entry-count" class="nav-badge">0</span>
+                    </div>
+                </div>
+                <div class="nav-section" id="all-section">
+                    <div id="entry-list"></div>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="settings-btn" class="btn-sidebar" title="Settings" aria-label="Settings">
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="7.5" cy="7.5" r="1.5"/>
+                        <path d="M7.5 1.5v2M7.5 11.5v2M2.3 3.8l1.73 1M10.97 10.2l1.73 1M1.5 7.5h2M11.5 7.5h2M2.3 11.2l1.73-1M10.97 4.8l1.73-1"/>
+                    </svg>
+                    Settings
+                </button>
+                <button id="open-folder-btn" class="btn-sidebar">
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 4.5C1 3.67 1.67 3 2.5 3H6l1.5 1.5H12.5c.83 0 1.5.67 1.5 1.5V11c0 .83-.67 1.5-1.5 1.5h-10C1.67 12.5 1 11.83 1 11V4.5z"/>
+                        <path d="M7.5 6.5v4M5.5 8.5l2-2 2 2"/>
+                    </svg>
+                    Open Folder
+                </button>
+                <div id="current-path" class="sidebar-path"></div>
+            </div>
+        </aside>
+
+        <main id="main">
+            <div class="toolbar">
+                <button id="add-anime-btn" class="btn-toolbar-icon add-anime-btn" title="Add new anime" aria-label="Add new anime">
+                    <svg width="14" height="14" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M7.5 2v11M2 7.5h11"/>
+                    </svg>
+                    Add Anime
+                </button>
+                <div class="search-container">
+                    <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                        <circle cx="6.5" cy="6.5" r="4.5"/>
+                        <path d="M10 10l3.5 3.5"/>
+                    </svg>
+                    <input
+                        id="search-input"
+                        type="text"
+                        placeholder="Search your collection…"
+                        autocomplete="off"
+                        spellcheck="false"
+                    />
+                </div>
+                <div class="toolbar-right">
+                    <div id="fetch-status" class="fetch-status hidden"></div>
+                    <button id="mal-refresh-btn" class="btn-toolbar-icon signin-btn hidden" title="Re-sync MAL statuses" aria-label="Re-sync MAL">
+                        <svg width="14" height="14" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M13 7.5A5.5 5.5 0 1 1 7.5 2a5.5 5.5 0 0 1 3.89 1.61L13 2"/>
+                            <path d="M13 2v3.5H9.5"/>
+                        </svg>
+                    </button>
+                    <div id="signin-wrapper" class="signin-wrapper">
+                        <button id="signin-btn" class="btn-toolbar-icon signin-btn" title="Sync with MyAnimeList" aria-label="Sign in to MyAnimeList">
+                            <span class="signin-icon">
+                                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="7.5" cy="4.5" r="3"/>
+                                    <path d="M2 14c0-3.5 2.5-6 5.5-6s5.5 2.5 5.5 6"/>
+                                </svg>
+                            </span>
+                            <span id="signin-label">Sign In</span>
+                        </button>
+                        <div id="signout-dropdown" class="signout-dropdown hidden">
+                            <div class="signout-item" id="open-profile-item">
+                                <svg width="14" height="14" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M10 13c0-2.5-1.5-4.5-3.5-4.5S3 10.5 3 13"/>
+                                    <circle cx="6.5" cy="4" r="2.5"/>
+                                    <path d="M12 7l2 2-2 2"/>
+                                    <path d="M14 9H9"/>
+                                </svg>
+                                Open Profile
+                            </div>
+                            <div class="signout-item" id="signout-item">Sign Out</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="status-tabs" class="status-tabs">
+                <button class="tab active" data-status="all">All</button>
+                <button class="tab" data-status="watching">Watching</button>
+                <button class="tab" data-status="completed">Completed</button>
+                <button class="tab" data-status="plan_to_watch">Plan to Watch</button>
+                <div id="filter-breadcrumb" class="filter-breadcrumb hidden">
+                    <button id="filter-back-btn" class="filter-back-btn" aria-label="Clear filter">
+                        <svg width="13" height="13" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 3.5L5 7.5l4 4"/>
+                        </svg>
+                    </button>
+                    <span id="breadcrumb-path" class="breadcrumb-path">Anime / <strong></strong></span>
+                </div>
+            </div>
+
+            <div id="welcome" class="welcome">
+                <div class="welcome-content">
+                    <div class="welcome-glyph">本</div>
+                    <h1>AniShelf</h1>
+                    <p>Your local anime library, beautifully organized.</p>
+                    <p class="welcome-sub">Point to a folder and we'll scan, match, and fetch posters automatically.</p>
+                    <button id="welcome-btn" class="btn-primary">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2 5C2 4.17 2.67 3.5 3.5 3.5H7L8.5 5H12.5C13.33 5 14 5.67 14 6.5V11.5C14 12.33 13.33 13 12.5 13h-9C2.67 13 2 12.33 2 11.5V5z"/>
+                        </svg>
+                        Open Folder
+                    </button>
+                </div>
+            </div>
+
+            <div id="loading-overlay" class="loading-overlay hidden">
+                <div class="loading-content">
+                    <div class="loading-spinner"></div>
+                    <p class="loading-text">Loading library…</p>
+                </div>
+            </div>
+
+            <div id="card-grid" class="card-grid hidden"></div>
+            <button id="scroll-top-btn" class="scroll-top hidden" aria-label="Scroll to top">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 11l5-5 5 5"/>
+                </svg>
+            </button>
+        </main>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="context-menu" class="context-menu hidden"></div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal hidden">
+        <div class="modal-panel">
+            <div class="modal-header">
+                <div class="modal-header-left">
+                    <h2>Link to MyAnimeList</h2>
+                    <span id="modal-current-title" class="modal-title-sub"></span>
+                </div>
+                <button class="modal-close" id="modal-cancel-btn" aria-label="Close">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M4 4l10 10M14 4L4 14"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-current-info" class="modal-current-info">
+                    <img id="modal-current-poster" class="modal-current-poster" src="" alt="" />
+                    <div class="modal-current-details">
+                        <strong id="modal-entry-title"></strong>
+                        <span id="modal-entry-parent" class="muted"></span>
+                        <span class="modal-folder-hint">Local folder entry</span>
+                    </div>
+                </div>
+                <div id="add-fields" class="add-fields hidden">
+                    <div id="add-location-hint" class="add-location-hint"></div>
+                    <div class="add-fields-row">
+                        <input id="add-folder-name" type="text" placeholder="Folder name" autocomplete="off" spellcheck="false" />
+                        <input id="add-season" type="text" placeholder="Season(optional)" autocomplete="off" spellcheck="false" />
+                    </div>
+                </div>
+                <div id="signin-fields" class="add-fields hidden">
+                    <div class="add-fields-row">
+                        <input id="mal-url-input" type="text" placeholder="https://myanimelist.net/animelist/YourUsername" autocomplete="off" spellcheck="false" />
+                    </div>
+                    <div class="signin-hint">Enter your public MyAnimeList animelist URL to sync watching status.</div>
+                    <div id="signin-error" class="signin-error hidden"></div>
+                </div>
+                <div class="search-field">
+                    <svg class="search-field-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                        <circle cx="6.5" cy="6.5" r="4.5"/>
+                        <path d="M10 10l3.5 3.5"/>
+                    </svg>
+                    <input
+                        id="mal-search-input"
+                        type="text"
+                        placeholder="Search MyAnimeList…"
+                        autocomplete="off"
+                        spellcheck="false"
+                    />
+                </div>
+                <div id="mal-results" class="mal-results">
+                    <div class="mal-empty">Type a name to search</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-cancel-btn-2" class="btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transfer to Phone Modal -->
+    <div id="transfer-modal" class="modal hidden">
+        <div class="modal-panel transfer-panel">
+            <div class="modal-header">
+                <div class="modal-header-left">
+                    <h2>Transfer to Phone</h2>
+                    <span id="transfer-subtitle" class="modal-title-sub"></span>
+                </div>
+                <div class="modal-header-buttons">
+                    <button class="modal-minimize" id="transfer-minimize-btn" aria-label="Minimize">
+                        <svg width="14" height="14" viewBox="0 0 14 14"><rect x="2" y="7" width="10" height="1.5" rx="0.75" fill="currentColor"/></svg>
+                    </button>
+                    <button class="modal-close" id="transfer-close-btn" aria-label="Close">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <path d="M4 4l10 10M14 4L4 14"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body transfer-body">
+                <div id="transfer-discovery" class="transfer-state">
+                    <div class="transfer-spinner">
+                        <svg class="transfer-scan-icon" viewBox="0 0 40 40">
+                            <circle cx="20" cy="20" r="16" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="25 75" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <p class="transfer-status-text">Searching for phone on network...</p>
+                    <p class="transfer-hint">Scanning 192.168.1.100–109</p>
+                    <div id="transfer-manual-ip" class="transfer-manual-ip hidden">
+                        <p class="transfer-manual-label">Or enter IP address manually:</p>
+                        <div class="transfer-manual-row">
+                            <input id="manual-ip-input" type="text" class="manual-ip-input" placeholder="192.168.1.xxx" autocomplete="off" spellcheck="false" />
+                            <button id="manual-ip-connect" class="btn-accent btn-sm">Connect</button>
+                        </div>
+                        <p id="manual-ip-error" class="manual-ip-error hidden"></p>
+                    </div>
+                </div>
+
+                <div id="transfer-found" class="transfer-state hidden">
+                    <div class="transfer-phone-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                            <line x1="12" y1="18" x2="12.01" y2="18"/>
+                        </svg>
+                    </div>
+                    <p class="transfer-status-text">Phone found at <strong id="transfer-phone-ip"></strong></p>
+                    <p class="transfer-folder-info" id="transfer-folder-name"></p>
+                </div>
+
+                <div id="transfer-files" class="transfer-state hidden">
+                    <div class="transfer-connected-bar">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                            <line x1="12" y1="18" x2="12.01" y2="18"/>
+                        </svg>
+                        <span>Connected to <strong id="transfer-files-ip"></strong></span>
+                    </div>
+                    <div class="transfer-files-header">
+                        <div class="transfer-files-title-row">
+                            <span class="transfer-files-title">Select Files</span>
+                            <span id="transfer-files-count" class="transfer-files-count"></span>
+                        </div>
+                        <div class="transfer-files-actions">
+                            <button id="transfer-select-all" class="transfer-files-link">All</button>
+                            <span class="transfer-files-sep">/</span>
+                            <button id="transfer-select-none" class="transfer-files-link">None</button>
+                            <span class="transfer-files-sep">/</span>
+                            <button id="transfer-select-videos" class="transfer-files-link">Videos</button>
+                        </div>
+                    </div>
+                    <div id="transfer-file-list" class="transfer-file-list"></div>
+                    <div class="transfer-files-footer">
+                        <span id="transfer-selected-summary" class="transfer-selected-summary"></span>
+                        <button id="transfer-start-btn" class="btn-accent transfer-start-btn">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M8 2v8M4 6l4-4 4 4"/>
+                                <rect x="2" y="10" width="12" height="4" rx="1"/>
+                            </svg>
+                            Transfer Selected
+                        </button>
+                    </div>
+                </div>
+
+                <div id="transfer-progress" class="transfer-state hidden">
+                    <img class="transfer-yumeko-gif" src="yumeko.webp" alt="" />
+                    <div class="progress-info">
+                        <span id="progress-percentage" class="progress-percentage">0%</span>
+                        <span id="progress-detail" class="progress-detail"></span>
+                    </div>
+                    <div class="progress-bar-track">
+                        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+                    </div>
+                    <p id="progress-status" class="progress-status">Preparing transfer...</p>
+                    <button id="transfer-cancel-btn" class="btn-cancel">Cancel</button>
+                </div>
+
+                <div id="transfer-complete" class="transfer-state hidden">
+                    <div class="transfer-success-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                    </div>
+                    <p class="transfer-status-text">Transferred successfully!</p>
+                    <p id="transfer-complete-detail" class="transfer-complete-detail"></p>
+                    <button id="transfer-done-btn" class="btn-accent">Done</button>
+                </div>
+
+                <div id="transfer-error" class="transfer-state hidden">
+                    <div class="transfer-error-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="15" y1="9" x2="9" y2="15"/>
+                            <line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                    </div>
+                    <p class="transfer-status-text">Transfer failed</p>
+                    <p id="transfer-error-msg" class="transfer-error-msg"></p>
+                    <div class="transfer-error-buttons">
+                        <button id="transfer-retry-btn" class="btn-secondary">Retry</button>
+                        <button id="transfer-error-done-btn" class="btn-secondary">Close</button>
+                    </div>
+                    <div id="transfer-error-manual" class="transfer-manual-ip">
+                        <p class="transfer-manual-label">Or enter IP address manually:</p>
+                        <div class="transfer-manual-row">
+                            <input id="error-manual-ip-input" type="text" class="manual-ip-input" placeholder="192.168.1.xxx" autocomplete="off" spellcheck="false" />
+                            <button id="error-manual-ip-connect" class="btn-accent btn-sm">Connect</button>
+                        </div>
+                        <p id="error-manual-ip-error" class="manual-ip-error hidden"></p>
+                    </div>
+                </div>
+
+                <div id="transfer-queue-section" class="transfer-queue hidden">
+                    <div class="queue-header">
+                        <span class="queue-title">Queued</span>
+                        <span id="queue-count" class="queue-badge">0</span>
+                    </div>
+                    <div id="queue-list" class="queue-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Minimized Transfer Popup -->
+    <div id="transfer-minimized" class="transfer-minimized hidden">
+        <div class="minimized-content">
+            <span id="minimized-status" class="minimized-status">Preparing transfer...</span>
+            <span id="minimized-percentage" class="minimized-percentage">0%</span>
+        </div>
+        <div class="minimized-bar-track">
+            <div id="minimized-bar-fill" class="minimized-bar-fill"></div>
+        </div>
+        <div class="minimized-buttons">
+            <button id="minimized-expand-btn" class="btn-icon" title="Expand">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 11L7 3l4 8"/>
+                </svg>
+            </button>
+            <button id="minimized-cancel-btn" class="btn-icon" title="Cancel">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                    <path d="M3 3l8 8M11 3l-8 8"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal settings-modal hidden">
+        <div class="modal-panel">
+            <div class="modal-header">
+                <div class="modal-header-left">
+                    <h2>Settings</h2>
+                </div>
+                <button class="modal-close" id="settings-close-btn" aria-label="Close">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M4 4l10 10M14 4L4 14"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <span class="settings-label">Theme</span>
+                    <div class="theme-picker">
+                        <div class="theme-card active" data-theme="yumeko">
+                            <div class="theme-swatch theme-swatch-yumeko">🤖</div>
+                            <div class="theme-card-name">Motoko's Shell</div>
+                            <div class="theme-card-sub">Dark · Violet · Gold</div>
+                        </div>
+                        <div class="theme-card" data-theme="makima">
+                            <div class="theme-swatch theme-swatch-makima">🐕</div>
+                            <div class="theme-card-name">Makima's Control</div>
+                            <div class="theme-card-sub">Dark · Crimson · Black</div>
+                        </div>
+                        <div class="theme-card" data-theme="tomoko">
+                            <div class="theme-swatch theme-swatch-tomoko">🌻</div>
+                            <div class="theme-card-name">Tomoko's Sunshine</div>
+                            <div class="theme-card-sub">Light · Coral · Cream</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <span class="settings-label">Default Sort Order</span>
+                    <select id="sort-select" class="sort-select">
+                        <option value="name-asc">Name A–Z</option>
+                        <option value="name-desc">Name Z–A</option>
+                        <option value="franchise">Franchise</option>
+                        <option value="status">MAL Status</option>
+                        <option value="recent">Recently Added</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="settings-done-btn">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom confirm dialog -->
+    <div id="confirm-dialog" class="confirm-dialog hidden">
+        <div class="confirm-backdrop"></div>
+        <div class="confirm-panel">
+            <svg class="confirm-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <p id="confirm-message" class="confirm-text"></p>
+            <div class="confirm-buttons">
+                <button id="confirm-cancel-btn" class="confirm-btn confirm-btn-secondary">Cancel</button>
+                <button id="confirm-ok-btn" class="confirm-btn confirm-btn-danger">Yes, Cancel</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+    <script src="app.js"></script>
+    <script>
+        document.getElementById('modal-cancel-btn-2').addEventListener('click', () => {
+            if (typeof closeSignInModal === 'function' && state.signingIn) {
+                closeSignInModal();
+            } else if (typeof closeAddModal === 'function' && state.addingNew) {
+                closeAddModal();
+            } else {
+                document.getElementById('edit-modal').classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
