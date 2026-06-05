@@ -2,3 +2,16 @@ node_modules/
 dist/
 target/
 *.log
+
+# Android companion app
+android/.gradle/
+android/build/
+android/local.properties
+android/.idea/
+android/.cxx/
+android/app/build/
+android/app/.cxx/
+android/captures/
+android/.externalNativeBuild/
+*.apk
+*.aab

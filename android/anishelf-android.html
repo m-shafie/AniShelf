@@ -1,0 +1,1788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>AniShelf · SMB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   AniShelf Android — SMB Server + Transfer Monitor
+   Design: Matches Windows app — Dark violet/indigo + gold
+   Fonts: Outfit (UI) + Space Mono (data/mono)
+   ============================================================ */
+
+:root {
+  --bg-base:       #080810;
+  --bg-sidebar:    #0c0c18;
+  --bg-surface:    #111120;
+  --bg-card:       #13131f;
+  --bg-card-hover: #1a1a2c;
+  --bg-input:      #0e0e1c;
+
+  --border-subtle: rgba(255,255,255,0.06);
+  --border-mid:    rgba(255,255,255,0.10);
+  --border-strong: rgba(255,255,255,0.16);
+
+  --text-primary:   #eeeef8;
+  --text-secondary: #8888aa;
+  --text-muted:     #4a4a6a;
+  --text-accent:    #a78bfa;
+
+  --accent:         #7c6bef;
+  --accent-bright:  #9b8df7;
+  --accent-dim:     rgba(124,107,239,0.15);
+  --accent-glow:    rgba(124,107,239,0.30);
+
+  --gold:           #fbbf24;
+  --gold-dim:       rgba(251,191,36,0.15);
+
+  --danger:         #ef4444;
+  --danger-dim:     rgba(239,68,68,0.15);
+  --success:        #34d399;
+  --success-dim:    rgba(52,211,153,0.12);
+  --warn:           #f59e0b;
+  --warn-dim:       rgba(245,158,11,0.12);
+
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+  --radius-xl:  18px;
+  --radius-pill: 999px;
+
+  --transition: 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  --shadow-card: 0 4px 24px rgba(0,0,0,0.55);
+  --shadow-float: 0 12px 48px rgba(0,0,0,0.7);
+
+  /* safe areas for notched phones */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+
+  /* tap target minimum */
+  --tap: 48px;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Scrollable root ── */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ===========================
+   TOP STATUS BAR
+   =========================== */
+#topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(var(--safe-top) + 10px) 18px 10px;
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  background: var(--accent-dim);
+  border: 1px solid rgba(124,107,239,0.35);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--accent-bright);
+  letter-spacing: -1px;
+  font-family: 'Space Mono', monospace;
+  position: relative;
+  overflow: hidden;
+}
+
+.brand-mark::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(124,107,239,0.2), transparent 60%);
+}
+
+.brand-name {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--text-primary);
+}
+
+.brand-name span {
+  color: var(--accent-bright);
+}
+
+.topbar-subtitle {
+  font-size: 11px;
+  font-family: 'Space Mono', monospace;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* server status pill */
+.server-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  font-size: 11.5px;
+  font-weight: 600;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: var(--transition);
+  user-select: none;
+  border: 1px solid transparent;
+}
+
+.server-pill.stopped {
+  background: var(--danger-dim);
+  border-color: rgba(239,68,68,0.2);
+  color: var(--danger);
+}
+
+.server-pill.running {
+  background: var(--success-dim);
+  border-color: rgba(52,211,153,0.2);
+  color: var(--success);
+}
+
+.server-pill.starting {
+  background: var(--warn-dim);
+  border-color: rgba(245,158,11,0.2);
+  color: var(--warn);
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.server-pill.running .status-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.7); }
+}
+
+/* ===========================
+   TAB BAR (bottom nav)
+   =========================== */
+#tabbar {
+  display: flex;
+  background: var(--bg-sidebar);
+  border-top: 1px solid var(--border-subtle);
+  padding-bottom: var(--safe-bot);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 10px 6px;
+  min-height: var(--tap);
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+  color: var(--text-muted);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tab-item.active {
+  color: var(--accent-bright);
+}
+
+.tab-item.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: var(--accent-bright);
+}
+
+.tab-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.tab-label {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+/* ===========================
+   SCREENS
+   =========================== */
+#screens {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
+  display: none;
+  flex-direction: column;
+  gap: 14px;
+  scrollbar-width: none;
+}
+
+.screen::-webkit-scrollbar { display: none; }
+
+.screen.active {
+  display: flex;
+}
+
+/* ===========================
+   CARDS
+   =========================== */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.card-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.card-body {
+  padding: 16px;
+}
+
+/* ===========================
+   SCREEN: SERVER
+   =========================== */
+
+/* Big server toggle button */
+.server-toggle-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 16px 24px;
+}
+
+.server-btn-ring {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  position: relative;
+  cursor: pointer;
+  margin-bottom: 16px;
+  -webkit-tap-highlight-color: transparent;
+  transition: var(--transition);
+}
+
+.server-btn-ring::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--border-mid);
+  transition: var(--transition);
+}
+
+.server-btn-ring.running::before {
+  border-color: rgba(52,211,153,0.3);
+  box-shadow: 0 0 24px rgba(52,211,153,0.15);
+}
+
+.server-btn-ring.stopped::before {
+  border-color: rgba(239,68,68,0.2);
+}
+
+.server-btn-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 2px solid var(--border-mid);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.server-btn-inner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(124,107,239,0.12), transparent 65%);
+}
+
+.server-btn-ring.running .server-btn-inner {
+  border-color: rgba(52,211,153,0.4);
+  background: rgba(52,211,153,0.05);
+}
+
+.server-btn-ring:active .server-btn-inner {
+  transform: scale(0.95);
+}
+
+.server-btn-icon {
+  width: 42px;
+  height: 42px;
+  color: var(--text-muted);
+  transition: var(--transition);
+  position: relative;
+  z-index: 1;
+}
+
+.server-btn-ring.running .server-btn-icon { color: var(--success); }
+.server-btn-ring.stopped .server-btn-icon { color: var(--text-muted); }
+.server-btn-ring.starting .server-btn-icon { color: var(--warn); }
+
+/* ripple on tap */
+@keyframes ripple {
+  to { transform: scale(2.4); opacity: 0; }
+}
+
+.server-btn-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.2px;
+}
+
+.server-btn-ring.running + .server-btn-label { color: var(--success); }
+
+/* Info grid */
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.info-tile {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+}
+
+.info-tile-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+}
+
+.info-tile-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: 'Space Mono', monospace;
+  word-break: break-all;
+}
+
+.info-tile-value.accent { color: var(--accent-bright); }
+.info-tile-value.success { color: var(--success); }
+.info-tile-value.muted { color: var(--text-muted); }
+
+/* Copy button */
+.copy-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.smb-path-text {
+  flex: 1;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-copy {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-dim);
+  border: 1px solid rgba(124,107,239,0.25);
+  color: var(--accent-bright);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-copy:active { opacity: 0.7; transform: scale(0.97); }
+
+/* Allowed dirs */
+.dir-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.dir-row:last-child { border-bottom: none; }
+.dir-row:active { background: var(--bg-card-hover); }
+
+.dir-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-dim);
+  border: 1px solid rgba(124,107,239,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-bright);
+  flex-shrink: 0;
+}
+
+.dir-info { flex: 1; min-width: 0; }
+
+.dir-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dir-path {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'Space Mono', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 1px;
+}
+
+.dir-toggle {
+  width: 40px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-input);
+  border: 1px solid var(--border-mid);
+  position: relative;
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+.dir-toggle.on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.dir-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: var(--transition);
+}
+
+.dir-toggle.on::after {
+  left: calc(100% - 18px);
+  background: white;
+}
+
+/* ===========================
+   SCREEN: LOGS
+   =========================== */
+
+.log-filters {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+
+.log-filters::-webkit-scrollbar { display: none; }
+
+.filter-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 13px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  transition: var(--transition);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.filter-chip.active {
+  background: var(--accent-dim);
+  border-color: rgba(124,107,239,0.3);
+  color: var(--accent-bright);
+}
+
+.filter-chip:active { opacity: 0.75; }
+
+/* Stats row */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.stat-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 11px 12px;
+  text-align: center;
+}
+
+.stat-num {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: 'Space Mono', monospace;
+  line-height: 1.1;
+  color: var(--text-primary);
+}
+
+.stat-num.success { color: var(--success); }
+.stat-num.danger  { color: var(--danger); }
+.stat-num.accent  { color: var(--accent-bright); }
+
+.stat-lbl {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Log list */
+.log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.log-entry {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  transition: var(--transition);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.log-entry:active { background: var(--bg-card-hover); }
+
+.log-entry.success { border-left: 3px solid var(--success); }
+.log-entry.error   { border-left: 3px solid var(--danger); }
+.log-entry.active  { border-left: 3px solid var(--accent-bright); }
+
+.log-type-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.log-type-icon.success { background: var(--success-dim); color: var(--success); }
+.log-type-icon.error   { background: var(--danger-dim);  color: var(--danger); }
+.log-type-icon.active  { background: var(--accent-dim);  color: var(--accent-bright); }
+
+.log-body { flex: 1; min-width: 0; }
+
+.log-filename {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 3px;
+}
+
+.log-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.log-tag {
+  font-size: 10.5px;
+  font-family: 'Space Mono', monospace;
+  color: var(--text-muted);
+}
+
+.log-tag.client { color: var(--accent-bright); opacity: 0.8; }
+
+.log-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  opacity: 0.5;
+}
+
+.log-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.log-size {
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Space Mono', monospace;
+  color: var(--text-secondary);
+}
+
+.log-time {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  font-family: 'Space Mono', monospace;
+}
+
+/* Active transfer progress */
+.log-progress-wrap {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.log-bar-track {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-input);
+  overflow: hidden;
+}
+
+.log-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent-bright);
+  transition: width 0.4s ease;
+}
+
+.log-pct {
+  font-size: 11px;
+  font-family: 'Space Mono', monospace;
+  color: var(--accent-bright);
+  width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Active transfer pulse animation */
+@keyframes bar-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.log-bar-fill.active {
+  background: linear-gradient(90deg,
+    var(--accent-dim) 0%,
+    var(--accent-bright) 40%,
+    var(--accent-dim) 80%
+  );
+  background-size: 200% 100%;
+  animation: bar-shimmer 1.6s linear infinite;
+}
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.empty-icon {
+  opacity: 0.25;
+  margin-bottom: 4px;
+}
+
+.empty-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.empty-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* ===========================
+   SCREEN: SETTINGS
+   =========================== */
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  gap: 12px;
+  min-height: var(--tap);
+}
+
+.setting-row:last-child { border-bottom: none; }
+
+.setting-row-info { flex: 1; min-width: 0; }
+
+.setting-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.setting-sub {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* toggle switch */
+.toggle {
+  width: 46px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-input);
+  border: 1px solid var(--border-mid);
+  position: relative;
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.toggle.on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: var(--transition);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+.toggle.on::after {
+  left: calc(100% - 21px);
+  background: white;
+}
+
+/* port input */
+.port-input {
+  width: 90px;
+  text-align: right;
+  background: var(--bg-input);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: 'Space Mono', monospace;
+  font-size: 14px;
+  padding: 7px 10px;
+  outline: none;
+  transition: var(--transition);
+}
+
+.port-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+/* Credentials card */
+.cred-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cred-field:last-child { border-bottom: none; }
+
+.cred-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  width: 72px;
+  flex-shrink: 0;
+}
+
+.cred-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: 'Space Mono', monospace;
+  padding: 0;
+}
+
+.cred-input::placeholder { color: var(--text-muted); }
+
+/* section label */
+.section-heading {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 4px 2px;
+}
+
+/* ===========================
+   TOAST NOTIFICATION
+   =========================== */
+#toast {
+  position: fixed;
+  bottom: calc(var(--safe-bot) + 72px);
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: var(--bg-card);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius-md);
+  padding: 11px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-float);
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
+  white-space: nowrap;
+  max-width: calc(100vw - 32px);
+}
+
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ===========================
+   SECTION DIVIDER
+   =========================== */
+.section-gap { height: 4px; }
+
+/* ===========================
+   SCROLLABLE HEADER SECTION
+   =========================== */
+.screen-label {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--text-primary);
+}
+
+.screen-sub {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ===========================
+   CLEAR LOG BUTTON
+   =========================== */
+.btn-ghost {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid var(--border-mid);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-ghost:active { background: var(--bg-card-hover); opacity: 0.8; }
+
+/* ===========================
+   CONNECTION COUNT BADGE
+   =========================== */
+.conn-badge {
+  background: var(--accent-dim);
+  border: 1px solid rgba(124,107,239,0.25);
+  color: var(--accent-bright);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Space Mono', monospace;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
+/* ===========================
+   ABOUT SECTION
+   =========================== */
+.about-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 28px 16px 20px;
+}
+
+.about-mark {
+  width: 62px;
+  height: 62px;
+  background: var(--accent-dim);
+  border: 1px solid rgba(124,107,239,0.3);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--accent-bright);
+  font-family: 'Space Mono', monospace;
+  margin-bottom: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.about-mark::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 30%, rgba(124,107,239,0.25), transparent 70%);
+}
+
+.about-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.about-ver {
+  font-size: 11.5px;
+  font-family: 'Space Mono', monospace;
+  color: var(--text-muted);
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── TOP BAR ── -->
+  <div id="topbar">
+    <div class="topbar-brand">
+      <div class="brand-mark">A</div>
+      <div>
+        <div class="brand-name"><span>Ani</span>Shelf</div>
+        <div class="topbar-subtitle">SMB · Android</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="server-pill stopped" id="server-pill" onclick="toggleServer()">
+        <div class="status-dot"></div>
+        <span id="server-pill-text">OFF</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCREENS ── -->
+  <div id="screens">
+
+    <!-- ═══════════════════════════════
+         SCREEN 1: SERVER
+         ═══════════════════════════════ -->
+    <div class="screen active" id="screen-server">
+
+      <!-- Big toggle -->
+      <div class="card" style="text-align:center;">
+        <div class="server-toggle-wrap">
+          <div class="server-btn-ring stopped" id="server-btn" onclick="toggleServer()">
+            <div class="server-btn-inner">
+              <svg class="server-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="20" height="8" rx="2"/>
+                <rect x="2" y="14" width="20" height="8" rx="2"/>
+                <line x1="6" y1="6" x2="6.01" y2="6" stroke-width="2.5"/>
+                <line x1="6" y1="18" x2="6.01" y2="18" stroke-width="2.5"/>
+                <line x1="10" y1="6" x2="14" y2="6"/>
+                <line x1="10" y1="18" x2="18" y2="18"/>
+              </svg>
+            </div>
+          </div>
+          <div class="server-btn-label" id="server-btn-label">Tap to Start SMB Server</div>
+        </div>
+
+        <!-- SMB path row -->
+        <div class="copy-row">
+          <span class="smb-path-text" id="smb-path">smb://—.—.—.—:1445/anishelf</span>
+          <button class="btn-copy" onclick="copyPath()">
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="4" width="8" height="8" rx="1.5"/>
+              <path d="M2 10V3a1 1 0 0 1 1-1h7"/>
+            </svg>
+            Copy
+          </button>
+        </div>
+      </div>
+
+      <!-- Info tiles -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Server Info</span>
+          <span class="conn-badge" id="conn-count">0 connected</span>
+        </div>
+        <div class="card-body" style="padding:12px;">
+          <div class="info-grid">
+            <div class="info-tile">
+              <div class="info-tile-label">IP Address</div>
+              <div class="info-tile-value accent" id="ip-value">—</div>
+            </div>
+            <div class="info-tile">
+              <div class="info-tile-label">Port</div>
+              <div class="info-tile-value accent">1445</div>
+            </div>
+            <div class="info-tile">
+              <div class="info-tile-label">Status</div>
+              <div class="info-tile-value" id="status-value" style="color:var(--text-muted)">Stopped</div>
+            </div>
+            <div class="info-tile">
+              <div class="info-tile-label">Uptime</div>
+              <div class="info-tile-value" id="uptime-value" style="color:var(--text-muted)">—</div>
+            </div>
+            <div class="info-tile">
+              <div class="info-tile-label">Sent</div>
+              <div class="info-tile-value success" id="sent-value">0 B</div>
+            </div>
+            <div class="info-tile">
+              <div class="info-tile-label">Share Name</div>
+              <div class="info-tile-value" style="color:var(--text-secondary)">anishelf</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shared folders -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Shared Folders</span>
+        </div>
+        <div id="dir-list">
+          <div class="dir-row">
+            <div class="dir-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 4.5C1 3.67 1.67 3 2.5 3H6l1.5 1.5H13.5c.83 0 1.5.67 1.5 1.5V12c0 .83-.67 1.5-1.5 1.5h-11C1.67 13.5 1 12.83 1 12V4.5z"/>
+              </svg>
+            </div>
+            <div class="dir-info">
+              <div class="dir-name">Anime Library</div>
+              <div class="dir-path">/storage/emulated/0/Anime</div>
+            </div>
+            <div class="dir-toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="dir-row">
+            <div class="dir-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 4.5C1 3.67 1.67 3 2.5 3H6l1.5 1.5H13.5c.83 0 1.5.67 1.5 1.5V12c0 .83-.67 1.5-1.5 1.5h-11C1.67 13.5 1 12.83 1 12V4.5z"/>
+              </svg>
+            </div>
+            <div class="dir-info">
+              <div class="dir-name">Downloads</div>
+              <div class="dir-path">/storage/emulated/0/Download</div>
+            </div>
+            <div class="dir-toggle" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="dir-row">
+            <div class="dir-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 4.5C1 3.67 1.67 3 2.5 3H6l1.5 1.5H13.5c.83 0 1.5.67 1.5 1.5V12c0 .83-.67 1.5-1.5 1.5h-11C1.67 13.5 1 12.83 1 12V4.5z"/>
+              </svg>
+            </div>
+            <div class="dir-info">
+              <div class="dir-name">SD Card</div>
+              <div class="dir-path">/storage/sdcard1</div>
+            </div>
+            <div class="dir-toggle" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-gap"></div>
+
+    </div><!-- /screen-server -->
+
+    <!-- ═══════════════════════════════
+         SCREEN 2: TRANSFER LOG
+         ═══════════════════════════════ -->
+    <div class="screen" id="screen-logs">
+
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+        <div>
+          <div class="screen-label">Transfers</div>
+          <div class="screen-sub">SMB transfer history &amp; live activity</div>
+        </div>
+        <button class="btn-ghost" onclick="clearLogs()">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 7 2 11 6"/>
+            <path d="M7 2v9"/>
+            <path d="M2 13h10"/>
+          </svg>
+          Clear
+        </button>
+      </div>
+
+      <!-- Filter chips -->
+      <div class="log-filters">
+        <div class="filter-chip active" onclick="filterLogs(this,'all')">All</div>
+        <div class="filter-chip" onclick="filterLogs(this,'active')">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="5" cy="5" r="4"/><path d="M5 3v2l1.5 1.5"/></svg>
+          Active
+        </div>
+        <div class="filter-chip" onclick="filterLogs(this,'success')">Done</div>
+        <div class="filter-chip" onclick="filterLogs(this,'error')">Failed</div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-num accent" id="stat-total">0</div>
+          <div class="stat-lbl">Total</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num success" id="stat-done">0</div>
+          <div class="stat-lbl">Done</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num danger" id="stat-fail">0</div>
+          <div class="stat-lbl">Failed</div>
+        </div>
+      </div>
+
+      <!-- Log entries -->
+      <div class="log-list" id="log-list">
+        <div class="empty-state">
+          <svg class="empty-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+          <div class="empty-text">No transfers yet</div>
+          <div class="empty-sub">Start the SMB server and connect from Windows to see activity here</div>
+        </div>
+      </div>
+
+      <div class="section-gap"></div>
+
+    </div><!-- /screen-logs -->
+
+    <!-- ═══════════════════════════════
+         SCREEN 3: SETTINGS
+         ═══════════════════════════════ -->
+    <div class="screen" id="screen-settings">
+
+      <div>
+        <div class="screen-label">Settings</div>
+        <div class="screen-sub">SMB server configuration</div>
+      </div>
+
+      <!-- Server settings -->
+      <div class="section-heading">Server</div>
+      <div class="card">
+        <div class="setting-row">
+          <div class="setting-row-info">
+            <div class="setting-label">Auto-start on boot</div>
+            <div class="setting-sub">Start SMB server when device boots</div>
+          </div>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-info">
+            <div class="setting-label">WiFi only</div>
+            <div class="setting-sub">Disable when not on WiFi</div>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-info">
+            <div class="setting-label">Port</div>
+            <div class="setting-sub">SMB listen port</div>
+          </div>
+          <input class="port-input" type="number" value="1445" min="1024" max="65535" id="port-input">
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-info">
+            <div class="setting-label">Read-only mode</div>
+            <div class="setting-sub">Clients can only read, not write</div>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+
+      <!-- Credentials -->
+      <div class="section-heading">Credentials</div>
+      <div class="card">
+        <div class="cred-field">
+          <span class="cred-label">User</span>
+          <input class="cred-input" type="text" value="anime" placeholder="username" autocomplete="off">
+        </div>
+        <div class="cred-field">
+          <span class="cred-label">Pass</span>
+          <input class="cred-input" type="password" value="shelf" placeholder="password" autocomplete="off">
+        </div>
+      </div>
+
+      <!-- Notifications -->
+      <div class="section-heading">Notifications</div>
+      <div class="card">
+        <div class="setting-row">
+          <div class="setting-row-info">
+            <div class="setting-label">Transfer alerts</div>
+            <div class="setting-sub">Notify on completion and errors</div>
+          </div>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-row-info">
+            <div class="setting-label">Keep screen on</div>
+            <div class="setting-sub">Prevent sleep during transfers</div>
+          </div>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+
+      <!-- About -->
+      <div class="section-heading">About</div>
+      <div class="card">
+        <div class="about-logo">
+          <div class="about-mark">A</div>
+          <div class="about-name">AniShelf · Android</div>
+          <div class="about-ver">v1.0.0 · SMB on :1445</div>
+        </div>
+        <div class="setting-row" style="border-top: 1px solid var(--border-subtle);">
+          <div class="setting-row-info">
+            <div class="setting-label">Windows companion app</div>
+            <div class="setting-sub">AniShelf desktop version</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted); flex-shrink:0;">
+            <path d="M6 3h7v7M13 3L6 10"/>
+            <path d="M3 6v7h7"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="section-gap"></div>
+
+    </div><!-- /screen-settings -->
+
+  </div><!-- /screens -->
+
+  <!-- ── BOTTOM TAB BAR ── -->
+  <div id="tabbar">
+    <div class="tab-item active" id="tab-server" onclick="switchTab('server')">
+      <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="2" width="20" height="8" rx="2"/>
+        <rect x="2" y="14" width="20" height="8" rx="2"/>
+        <line x1="6" y1="6" x2="6.01" y2="6" stroke-width="2.5"/>
+        <line x1="6" y1="18" x2="6.01" y2="18" stroke-width="2.5"/>
+        <line x1="10" y1="6" x2="14" y2="6"/>
+        <line x1="10" y1="18" x2="18" y2="18"/>
+      </svg>
+      <span class="tab-label">Server</span>
+    </div>
+    <div class="tab-item" id="tab-logs" onclick="switchTab('logs')">
+      <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="9" y1="13" x2="15" y2="13"/>
+        <line x1="9" y1="17" x2="13" y2="17"/>
+      </svg>
+      <span class="tab-label">Transfers</span>
+    </div>
+    <div class="tab-item" id="tab-settings" onclick="switchTab('settings')">
+      <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+      <span class="tab-label">Settings</span>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   AniShelf Android — SMB Demo Logic
+   ============================================================ */
+
+// ── State ──
+const state = {
+  serverRunning: false,
+  serverStarting: false,
+  startedAt: null,
+  ip: '192.168.1.' + Math.floor(Math.random()*200+10),
+  connections: 0,
+  bytesSent: 0,
+  logs: [],
+  logFilter: 'all',
+  uptimeTimer: null,
+  demoTimer: null,
+};
+
+// ── Tab switching ──
+function switchTab(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── Server toggle ──
+function toggleServer() {
+  if (state.serverStarting) return;
+
+  if (state.serverRunning) {
+    stopServer();
+  } else {
+    startServer();
+  }
+}
+
+function startServer() {
+  state.serverStarting = true;
+  setServerUI('starting');
+  showToast('Starting SMB server…');
+
+  setTimeout(() => {
+    state.serverRunning = true;
+    state.serverStarting = false;
+    state.startedAt = Date.now();
+    state.connections = 0;
+    state.bytesSent = 0;
+    setServerUI('running');
+    updateIP();
+    startUptimeTimer();
+    showToast('SMB server running on :1445');
+    addLog({ type: 'active', file: 'Server started', client: state.ip, size: null, progress: 100, done: true, status: 'success', time: new Date() });
+    startDemoTransfers();
+  }, 1800);
+}
+
+function stopServer() {
+  state.serverRunning = false;
+  state.serverStarting = false;
+  clearInterval(state.uptimeTimer);
+  clearTimeout(state.demoTimer);
+  state.startedAt = null;
+  setServerUI('stopped');
+  document.getElementById('uptime-value').textContent = '—';
+  document.getElementById('status-value').textContent = 'Stopped';
+  document.getElementById('status-value').style.color = 'var(--text-muted)';
+  document.getElementById('conn-count').textContent = '0 connected';
+  showToast('SMB server stopped');
+  // mark active logs as cancelled
+  state.logs.forEach(l => { if (l.type === 'active') { l.type = 'error'; l.errorMsg = 'Server stopped'; } });
+  renderLogs();
+}
+
+function setServerUI(mode) {
+  const btn = document.getElementById('server-btn');
+  const pill = document.getElementById('server-pill');
+  const pillText = document.getElementById('server-pill-text');
+  const label = document.getElementById('server-btn-label');
+
+  btn.className = 'server-btn-ring ' + mode;
+  pill.className = 'server-pill ' + (mode === 'running' ? 'running' : mode === 'starting' ? 'starting' : 'stopped');
+
+  if (mode === 'running') {
+    pillText.textContent = 'ON';
+    label.textContent = 'Server Running — Tap to Stop';
+    label.style.color = 'var(--success)';
+    document.getElementById('status-value').textContent = 'Running';
+    document.getElementById('status-value').style.color = 'var(--success)';
+  } else if (mode === 'starting') {
+    pillText.textContent = '…';
+    label.textContent = 'Starting…';
+    label.style.color = 'var(--warn)';
+  } else {
+    pillText.textContent = 'OFF';
+    label.textContent = 'Tap to Start SMB Server';
+    label.style.color = 'var(--text-muted)';
+    document.getElementById('ip-value').textContent = '—';
+    document.getElementById('smb-path').textContent = 'smb://—.—.—.—:1445/anishelf';
+  }
+}
+
+function updateIP() {
+  document.getElementById('ip-value').textContent = state.ip;
+  document.getElementById('smb-path').textContent = `smb://${state.ip}:1445/anishelf`;
+}
+
+function startUptimeTimer() {
+  state.uptimeTimer = setInterval(() => {
+    if (!state.startedAt) return;
+    const s = Math.floor((Date.now() - state.startedAt) / 1000);
+    const h = Math.floor(s / 3600).toString().padStart(2, '0');
+    const m = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
+    const sec = (s % 60).toString().padStart(2, '0');
+    document.getElementById('uptime-value').textContent = `${h}:${m}:${sec}`;
+    document.getElementById('uptime-value').style.color = 'var(--text-primary)';
+    // update bytes sent display
+    document.getElementById('sent-value').textContent = formatBytes(state.bytesSent);
+  }, 1000);
+}
+
+// ── Demo transfers (simulates activity) ──
+const DEMO_FILES = [
+  { name: '[HorribleSubs] Attack on Titan S04E28 [1080p].mkv', size: 1.4*1024*1024*1024 },
+  { name: 'Steins;Gate - 01 [BD 1080p].mkv', size: 680*1024*1024 },
+  { name: 'Violet Evergarden Movie [4K HDR].mkv', size: 8.2*1024*1024*1024 },
+  { name: 'Mushishi S01E01.mkv', size: 340*1024*1024 },
+  { name: '[SubsPlease] Frieren - 28 (1080p).mkv', size: 1.1*1024*1024*1024 },
+  { name: 'Neon Genesis Evangelion - Complete [BD].zip', size: 22*1024*1024*1024 },
+  { name: 'Cowboy Bebop - 01 [1080p Remaster].mkv', size: 900*1024*1024 },
+  { name: '[Erai-raws] Dungeon Meshi - 24 [1080p].mkv', size: 1.3*1024*1024*1024 },
+];
+
+const CLIENT_IPS = ['192.168.1.5', '192.168.1.22', '192.168.1.104'];
+
+function startDemoTransfers() {
+  if (!state.serverRunning) return;
+
+  const scheduleNext = () => {
+    if (!state.serverRunning) return;
+    const delay = 2000 + Math.random() * 4000;
+    state.demoTimer = setTimeout(() => {
+      spawnDemoTransfer();
+      scheduleNext();
+    }, delay);
+  };
+
+  // kick off first one quickly
+  setTimeout(spawnDemoTransfer, 1200);
+  scheduleNext();
+}
+
+function spawnDemoTransfer() {
+  if (!state.serverRunning) return;
+
+  const file = DEMO_FILES[Math.floor(Math.random() * DEMO_FILES.length)];
+  const client = CLIENT_IPS[Math.floor(Math.random() * CLIENT_IPS.length)];
+  const willFail = Math.random() < 0.12;
+  const transferSpeed = (20 + Math.random() * 60) * 1024 * 1024; // 20–80 MB/s
+  const totalTime = file.size / transferSpeed * 1000;
+
+  const log = {
+    id: Date.now() + Math.random(),
+    type: 'active',
+    file: file.name,
+    client,
+    size: file.size,
+    progress: 0,
+    done: false,
+    status: 'active',
+    time: new Date(),
+    errorMsg: null,
+  };
+
+  state.logs.unshift(log);
+  state.connections = Math.min(state.connections + 1, 3);
+  updateConnCount();
+  renderLogs();
+
+  // animate progress
+  const startTime = Date.now();
+  const tick = setInterval(() => {
+    if (!state.serverRunning) {
+      clearInterval(tick);
+      return;
+    }
+    const elapsed = Date.now() - startTime;
+    const pct = Math.min(elapsed / totalTime * 100, 100);
+
+    if (willFail && pct > 40 + Math.random() * 40) {
+      log.type = 'error';
+      log.done = true;
+      log.errorMsg = 'Connection reset by peer';
+      clearInterval(tick);
+      state.connections = Math.max(0, state.connections - 1);
+      updateConnCount();
+      updateStats();
+      renderLogs();
+      return;
+    }
+
+    log.progress = pct;
+    if (pct >= 100) {
+      log.type = 'success';
+      log.done = true;
+      log.progress = 100;
+      state.bytesSent += file.size;
+      clearInterval(tick);
+      state.connections = Math.max(0, state.connections - 1);
+      updateConnCount();
+    }
+    updateStats();
+    renderLogs();
+  }, 200);
+}
+
+function updateConnCount() {
+  const el = document.getElementById('conn-count');
+  el.textContent = state.connections + ' connected';
+}
+
+// ── Log rendering ──
+function renderLogs() {
+  const list = document.getElementById('log-list');
+  const filter = state.logFilter;
+
+  const filtered = filter === 'all'
+    ? state.logs
+    : state.logs.filter(l => {
+        if (filter === 'active') return l.type === 'active';
+        if (filter === 'success') return l.type === 'success';
+        if (filter === 'error') return l.type === 'error';
+        return true;
+      });
+
+  if (filtered.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <svg class="empty-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        <div class="empty-text">No transfers here</div>
+        <div class="empty-sub">Start the server to see activity</div>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.slice(0, 40).map(l => {
+    const icon = l.type === 'success'
+      ? `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8 6 11 13 5"/></svg>`
+      : l.type === 'error'
+      ? `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>`
+      : `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-8.5"/></svg>`;
+
+    const progressHtml = l.type === 'active'
+      ? `<div class="log-progress-wrap">
+           <div class="log-bar-track"><div class="log-bar-fill active" style="width:${l.progress.toFixed(1)}%"></div></div>
+           <span class="log-pct">${Math.round(l.progress)}%</span>
+         </div>`
+      : '';
+
+    return `
+      <div class="log-entry ${l.type}">
+        <div class="log-type-icon ${l.type}">${icon}</div>
+        <div class="log-body">
+          <div class="log-filename">${l.file}</div>
+          <div class="log-meta">
+            <span class="log-tag client">${l.client}</span>
+            <span class="log-dot"></span>
+            ${l.size ? `<span class="log-tag">${formatBytes(l.size)}</span>` : ''}
+            ${l.errorMsg ? `<span class="log-dot"></span><span class="log-tag" style="color:var(--danger)">${l.errorMsg}</span>` : ''}
+          </div>
+          ${progressHtml}
+        </div>
+        <div class="log-right">
+          <span class="log-time">${formatTime(l.time)}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function updateStats() {
+  const total = state.logs.length;
+  const done  = state.logs.filter(l => l.type === 'success').length;
+  const fail  = state.logs.filter(l => l.type === 'error').length;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-done').textContent  = done;
+  document.getElementById('stat-fail').textContent  = fail;
+}
+
+function filterLogs(el, filter) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  state.logFilter = filter;
+  renderLogs();
+}
+
+function clearLogs() {
+  if (state.logs.some(l => l.type === 'active')) {
+    showToast('Cannot clear while transfers are active');
+    return;
+  }
+  state.logs = [];
+  updateStats();
+  renderLogs();
+  showToast('Transfer log cleared');
+}
+
+// ── Copy path ──
+function copyPath() {
+  const path = document.getElementById('smb-path').textContent;
+  if (path.includes('—')) { showToast('Start the server first'); return; }
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(path).then(() => showToast('Copied: ' + path));
+  } else {
+    showToast('Copied to clipboard');
+  }
+}
+
+// ── Utilities ──
+function formatBytes(b) {
+  if (!b) return '—';
+  if (b >= 1024**3) return (b / 1024**3).toFixed(1) + ' GB';
+  if (b >= 1024**2) return (b / 1024**2).toFixed(0) + ' MB';
+  if (b >= 1024)    return (b / 1024).toFixed(0) + ' KB';
+  return b + ' B';
+}
+
+function formatTime(d) {
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+let _toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+</script>
+</body>
+</html>
