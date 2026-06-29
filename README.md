@@ -4,6 +4,8 @@ Anime library manager with wireless SMB2/3 transfer to Android.
 
 Built with Tauri (Rust) for Windows and Kotlin/Jetpack Compose for Android.
 
+![Screenshot](screenshot.png)
+
 ## Features
 
 ### Desktop App (Tauri)
